@@ -11,99 +11,151 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<TodoController>();
+    final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Todo List'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.sort),
-            onPressed: () {
-              _showSortOptions(context, controller);
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search tasks...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            // Custom App Bar
+            SliverAppBar(
+              // expandedHeight: 120,
+              floating: true,
+              pinned: true,
+              backgroundColor: theme.appBarTheme.backgroundColor,
+              flexibleSpace: FlexibleSpaceBar(
+                titlePadding: const EdgeInsets.only(left: 20, bottom: 16),
+                title: const Text(
+                  'My Tasks',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                    fontSize: 24,
+                  ),
                 ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                background: Container(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(0),
+                    ),
+                  ),
+                ),
               ),
-              onChanged: controller.setSearchQuery,
+
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.sort_rounded, size: 28),
+                  onPressed: () {
+                    _showSortOptions(context, controller);
+                  },
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: () {
+                    Get.to(() => const TodoFormScreen());
+                  },
+                  icon: const Icon(Icons.add_rounded),
+                ),
+              ],
             ),
-          ),
 
-          // Filters
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Obx(() => Row(
-                  children: [
-                    _FilterChip(
-                      label: 'All',
-                      isSelected: controller.sortCriteria.value == 'createdAt',
-                      onSelected: (_) =>
-                          controller.setSortCriteria('createdAt'),
+            // Search bar
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'Search tasks...',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    const SizedBox(width: 8),
-                    _FilterChip(
-                      label: 'Priority',
-                      isSelected: controller.sortCriteria.value == 'priority',
-                      onSelected: (_) => controller.setSortCriteria('priority'),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.clear_rounded),
+                      onPressed: () {
+                        controller.setSearchQuery('');
+                      },
                     ),
-                    const SizedBox(width: 8),
-                    _FilterChip(
-                      label: 'Due Date',
-                      isSelected: controller.sortCriteria.value == 'dueDate',
-                      onSelected: (_) => controller.setSortCriteria('dueDate'),
-                    ),
-                  ],
-                )),
-          ),
+                  ),
+                  onChanged: controller.setSearchQuery,
+                ),
+              ),
+            ),
 
-          const SizedBox(height: 8),
+            // Filters
+            SliverToBoxAdapter(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: Obx(() => Row(
+                      children: [
+                        _FilterChip(
+                          label: 'All',
+                          icon: Icons.calendar_view_day_rounded,
+                          isSelected:
+                              controller.sortCriteria.value == 'createdAt',
+                          onSelected: (_) =>
+                              controller.setSortCriteria('createdAt'),
+                        ),
+                        const SizedBox(width: 12),
+                        _FilterChip(
+                          label: 'Priority',
+                          icon: Icons.priority_high_rounded,
+                          isSelected:
+                              controller.sortCriteria.value == 'priority',
+                          onSelected: (_) =>
+                              controller.setSortCriteria('priority'),
+                        ),
+                        const SizedBox(width: 12),
+                        _FilterChip(
+                          label: 'Due Date',
+                          icon: Icons.event_rounded,
+                          isSelected:
+                              controller.sortCriteria.value == 'dueDate',
+                          onSelected: (_) =>
+                              controller.setSortCriteria('dueDate'),
+                        ),
+                      ],
+                    )),
+              ),
+            ),
 
-          // Todo list
-          Expanded(
-            child: Obx(() {
+            // Todo list
+            Obx(() {
               if (controller.isLoading.value) {
-                return const Center(child: CircularProgressIndicator());
+                return const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator()),
+                );
               }
 
               if (controller.filteredTodos.isEmpty) {
-                return _buildEmptyState();
+                return SliverFillRemaining(
+                  child: _buildEmptyState(),
+                );
               }
 
-              return ListView.builder(
-                itemCount: controller.filteredTodos.length,
-                itemBuilder: (context, index) {
-                  final todo = controller.filteredTodos[index];
-                  return TodoItem(
-                    todo: todo,
-                    onTap: () {
-                      Get.to(() => TodoDetailScreen(todo: todo));
+              return SliverPadding(
+                padding: const EdgeInsets.only(bottom: 80), // For FAB space
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final todo = controller.filteredTodos[index];
+                      return TodoItem(
+                        todo: todo,
+                        onTap: () {
+                          Get.to(() => TodoDetailScreen(todo: todo));
+                        },
+                      );
                     },
-                  );
-                },
+                    childCount: controller.filteredTodos.length,
+                  ),
+                ),
               );
             }),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Get.to(() => const TodoFormScreen());
-        },
-        child: const Icon(Icons.add),
+          ],
+        ),
       ),
     );
   }
@@ -113,26 +165,65 @@ class HomeScreen extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.check_circle_outline,
-            size: 80,
-            color: Colors.grey.shade400,
+          Image.asset(
+            'assets/empty_task.png',
+            height: 180,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) => Icon(
+              Icons.check_circle_outline_rounded,
+              size: 120,
+              color: Colors.grey.shade400,
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           Text(
             'No tasks found',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 22,
               fontWeight: FontWeight.bold,
               color: Colors.grey.shade600,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Tap the + button to add a new task',
+            'Add a new task to get started',
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 40),
+          // ElevatedButton.icon(
+          //   onPressed: () {
+          //     Get.to(() => const TodoFormScreen());
+          //   },
+          //   icon: const Icon(Icons.add_rounded),
+          //   label: Center(child: const Text("Create Task")),
+          // style: ElevatedButton.styleFrom(
+          //   padding: const EdgeInsets.symmetric(
+          //     horizontal: 24,
+          //     vertical: 12,
+          //   ),
+          // ),
+          // ),
+          GestureDetector(
+            onTap: () {
+              Get.to(() => const TodoFormScreen());
+            },
+            child: Container(
+              width: 200,
+              height: 50,
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add_rounded, color: Colors.white),
+                  Text("Create Task", style: TextStyle(color: Colors.white)),
+                ],
+              ),
             ),
           ),
         ],
@@ -143,45 +234,66 @@ class HomeScreen extends StatelessWidget {
   void _showSortOptions(BuildContext context, TodoController controller) {
     showModalBottomSheet(
       context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (BuildContext context) {
         return Container(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                margin: const EdgeInsets.only(bottom: 20),
+              ),
               const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Text(
-                  'Sort by',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Row(
+                  children: [
+                    Icon(Icons.sort_rounded),
+                    SizedBox(width: 12),
+                    Text(
+                      'Sort by',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const Divider(),
-              Obx(() => ListTile(
-                    leading: const Icon(Icons.access_time),
-                    title: const Text('Created Date (newest first)'),
-                    selected: controller.sortCriteria.value == 'createdAt',
+              Obx(() => _SortOption(
+                    icon: Icons.access_time_rounded,
+                    title: 'Created Date',
+                    subtitle: 'Newest first',
+                    isSelected: controller.sortCriteria.value == 'createdAt',
                     onTap: () {
                       controller.setSortCriteria('createdAt');
                       Navigator.pop(context);
                     },
                   )),
-              Obx(() => ListTile(
-                    leading: const Icon(Icons.low_priority),
-                    title: const Text('Priority (high to low)'),
-                    selected: controller.sortCriteria.value == 'priority',
+              Obx(() => _SortOption(
+                    icon: Icons.low_priority_rounded,
+                    title: 'Priority',
+                    subtitle: 'High to low',
+                    isSelected: controller.sortCriteria.value == 'priority',
                     onTap: () {
                       controller.setSortCriteria('priority');
                       Navigator.pop(context);
                     },
                   )),
-              Obx(() => ListTile(
-                    leading: const Icon(Icons.calendar_today),
-                    title: const Text('Due Date (upcoming first)'),
-                    selected: controller.sortCriteria.value == 'dueDate',
+              Obx(() => _SortOption(
+                    icon: Icons.event_rounded,
+                    title: 'Due Date',
+                    subtitle: 'Upcoming first',
+                    isSelected: controller.sortCriteria.value == 'dueDate',
                     onTap: () {
                       controller.setSortCriteria('dueDate');
                       Navigator.pop(context);
@@ -197,30 +309,101 @@ class HomeScreen extends StatelessWidget {
 
 class _FilterChip extends StatelessWidget {
   final String label;
+  final IconData icon;
   final bool isSelected;
   final ValueChanged<bool> onSelected;
 
   const _FilterChip({
     required this.label,
+    required this.icon,
     required this.isSelected,
     required this.onSelected,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return FilterChip(
-      label: Text(
-        label,
-        style: TextStyle(
-          color: isSelected ? Colors.white : null,
-          fontWeight: isSelected ? FontWeight.bold : null,
-        ),
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 18,
+            color: isSelected ? Colors.white : theme.colorScheme.primary,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : null,
+              fontWeight: isSelected ? FontWeight.bold : null,
+            ),
+          ),
+        ],
       ),
       selected: isSelected,
       onSelected: onSelected,
-      backgroundColor: Colors.grey.shade200,
-      selectedColor: Theme.of(context).colorScheme.primary,
+      backgroundColor: theme.chipTheme.backgroundColor,
+      selectedColor: theme.colorScheme.primary,
       checkmarkColor: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      elevation: isSelected ? 2 : 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: isSelected
+            ? BorderSide.none
+            : BorderSide(color: theme.colorScheme.primary.withOpacity(0.3)),
+      ),
+    );
+  }
+}
+
+class _SortOption extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _SortOption({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: isSelected ? theme.colorScheme.primary : null,
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.bold : null,
+          color: isSelected ? theme.colorScheme.primary : null,
+        ),
+      ),
+      subtitle: Text(subtitle),
+      selected: isSelected,
+      trailing: isSelected
+          ? Icon(Icons.check_circle, color: theme.colorScheme.primary)
+          : null,
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 20,
+        vertical: 4,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
     );
   }
 }

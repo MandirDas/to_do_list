@@ -93,7 +93,7 @@ class TodoController extends GetxController {
   void applyFilters() {
     List<Todo> result = List<Todo>.from(todos);
 
-    // Apply search filter if there's a query
+    
     if (searchQuery.value.isNotEmpty) {
       final query = searchQuery.value.toLowerCase();
       result = result

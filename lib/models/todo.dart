@@ -2,7 +2,7 @@ class Todo {
   int? id;
   String title;
   String description;
-  int priority; // 1: Low, 2: Medium, 3: High
+  int priority; 
   DateTime dueDate;
   bool isCompleted;
   DateTime createdAt;
